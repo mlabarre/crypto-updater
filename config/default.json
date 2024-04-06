@@ -1,0 +1,8 @@
+{
+  "fiat_currency" : "EUR",
+  "coingecko_currency" : "eur",
+  "mongodb_uri" : "mongodb://mongo:27017/?serverSelectionTimeoutMS=3000&directConnection=true",
+  "mongodb_database": "crypto",
+  "coingecko_coins_uri": "https://api.coingecko.com/api/v3/coins/list",
+  "coingecko_quotation_uri": "https://api.coingecko.com/api/v3/simple/price"
+}
