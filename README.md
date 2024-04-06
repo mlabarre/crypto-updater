@@ -1,0 +1,1 @@
+Please see project mlabarre/crypto-dashboard for informations.
