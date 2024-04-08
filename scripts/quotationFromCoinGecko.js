@@ -32,6 +32,7 @@ let getQuotationsFromApi = async () => {
         });
     } catch (error) {
         console.log(error);
+        return {"errorGecko": true};
     }
 }
 
