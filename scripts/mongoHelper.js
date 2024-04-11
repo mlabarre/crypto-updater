@@ -59,7 +59,6 @@ class MongoHelper {
             let updates = 0;
             await this.init();
             for (let crypto in cryptos) {
-                console.log(cryptos[crypto])
                 await this.dbo.collection("coingecko").findOneAndReplace({id: cryptos[crypto].id}, cryptos[crypto], {upsert: true});
                 ++updates
             }
@@ -77,6 +76,35 @@ class MongoHelper {
             await this.mongoClient.close();
         }
     }
+
+    getAlerts = async () => {
+        try {
+            await this.init();
+            return await this.dbo.collection("alerts").find({}).toArray();
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
+    getNotifications = async () => {
+        try {
+            await this.init();
+            return await this.dbo.collection("notifications").find({}).toArray();
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
+    addOrUpdateNotification = async (notification) => {
+        try {
+            await this.init();
+            return await this.dbo.collection("notifications")
+                .findOneAndReplace({type: notification.type, token: notification.token}, notification, {upsert: true});
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
 }
 
 module.exports = MongoHelper

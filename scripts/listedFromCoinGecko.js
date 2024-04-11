@@ -2,28 +2,23 @@ const config = require('config');
 const MongoHelper = require('../scripts/mongoHelper');
 
 let getCoinsFromApi = async () => {
-    try {
-        fetch(config.get('coingecko_coins_uri')).then( (response) => {
-            if (response.status === 200) {
-                return response.json();
-            } else {
-                console.log(`Error getting coin currency for url ${url}`);
-                console.log(`Error info : ${response.statusText}. ${response.statusMessage}`);
-                return {"errorGecko": true};
-            }
-        });
-    } catch (error) {
-        console.log(error);
+    let response = await fetch(config.get('coingecko_coins_url'));
+    if (response.status === 200) {
+        return await response.json();
+    } else {
+        console.log(`Error getting coin currency for url ${config.get('coingecko_coins_url')}`);
+        console.log(`Error info : ${response.statusText}. ${response.statusMessage}`);
         return {"errorGecko": true};
     }
+
 }
 let update = async () => {
+    let updates = 0;
     let cryptos = await getCoinsFromApi();
     if (cryptos.errorGecko !== true) {
-        return new MongoHelper().updateAllCoingecko(cryptos);
-    } else {
-        return 0;
+        updates = await new MongoHelper().updateAllCoingecko(cryptos);
     }
+    return updates;
 }
 
 exports.update = update

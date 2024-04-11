@@ -21,7 +21,6 @@ cron.schedule("*/5 * * * *", () => {
 }, {});
 
 let updateCoins = () => {
-
     listed.update().then( (result) => {
         new MongoHelper().log("coins", {date: new Date, key: "coins", info: `${result} cryptos updated`}).then(()=> {
 
@@ -30,6 +29,7 @@ let updateCoins = () => {
 }
 
 updateCoins();
+
 
 cron.schedule("0 23 * * *", () => {
 
