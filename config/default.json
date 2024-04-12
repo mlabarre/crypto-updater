@@ -7,5 +7,5 @@
   "coingecko_coins_url": "https://api.coingecko.com/api/v3/coins/list",
   "coingecko_quotation_url": "https://api.coingecko.com/api/v3/simple/price",
   "notification_ntfy_url": "https://ntfy.sh",
-  "notification_ntfy_topic": "cryptosalertmy98HLip__KxVp"
+  "notification_ntfy_topic": "sujet/topic"
 }
