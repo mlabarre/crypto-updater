@@ -42,15 +42,17 @@ let showUpdateDetail = (tag, coin) => {
  */
 let findTokenAlertInAlerts = (token, alerts) => {
     let alert = null;
+    let globalAlert = null;
     for (let i = 0; i < alerts.length; i++) {
         if (alerts[i].token.toUpperCase() === token.toUpperCase() || alerts[i].token.toUpperCase() === '_ALL_TOKENS_') {
-            alert = alerts[i];
-            if (alert.token.toUpperCase() === '_ALL_TOKENS_') {
-                break;
+            if (alerts[i].token.toUpperCase() === '_ALL_TOKENS_') {
+                globalAlert = alerts[i];
+            } else {
+                alert = alerts[i];
             }
         }
     }
-    return alert;
+    return alert !== null ? alert : globalAlert;
 }
 
 let isNewNotification = (storedNotification, token, type, value) => {
