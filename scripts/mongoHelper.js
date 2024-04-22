@@ -15,10 +15,21 @@ class MongoHelper {
         this.dbo = db.db(config.get('mongodb_database'));
     }
 
-    findAllSymbols = async () => {
+    findAllSymbolsInMyCryptos = async () => {
         try {
             await this.init();
             return await this.dbo.collection("my-cryptos").find({}, {
+                "id": 1
+            }).toArray();
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
+    findAllSymbolsInCryptosSurvey = async () => {
+        try {
+            await this.init();
+            return await this.dbo.collection("cryptos-survey").find({}, {
                 "id": 1
             }).toArray();
         } finally {
@@ -35,10 +46,28 @@ class MongoHelper {
         }
     }
 
+    findCryptosSurvey = async (id) => {
+        try {
+            await this.init();
+            return await this.dbo.collection("cryptos-survey").findOne({id: id});
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
     findOneAndReplaceInMyCryptos = async (doc) => {
         try {
             await this.init();
             return await this.dbo.collection("my-cryptos").findOneAndReplace({id: doc.id}, doc)
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
+    findOneAndReplaceInCryptosSurvey = async (doc) => {
+        try {
+            await this.init();
+            return await this.dbo.collection("cryptos-survey").findOneAndReplace({id: doc.id}, doc)
         } finally {
             await this.mongoClient.close();
         }
@@ -81,6 +110,15 @@ class MongoHelper {
         try {
             await this.init();
             return await this.dbo.collection("alerts").find({}).toArray();
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
+    getAlertsSurvey = async () => {
+        try {
+            await this.init();
+            return await this.dbo.collection("alerts-survey").find({}).toArray();
         } finally {
             await this.mongoClient.close();
         }

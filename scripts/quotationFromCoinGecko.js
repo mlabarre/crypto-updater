@@ -1,8 +1,8 @@
 const config = require('config');
 const MongoHelper = require('../scripts/mongoHelper');
 
-let getAllSymbols = async () => {
-    let list = await new MongoHelper().findAllSymbols();
+let getAllSymbolsInMyCryptos = async () => {
+    let list = await new MongoHelper().findAllSymbolsInMyCryptos();
     let symbols = [];
     await list.forEach((t) => {
         symbols.push(t.id);
@@ -13,13 +13,23 @@ let getAllSymbols = async () => {
     return symbols.sort();
 }
 
-let buildQuotationUrl = (ids) => {
+let getAllSymbolsInCryptosSurvey = async () => {
+    let list = await new MongoHelper().findAllSymbolsInCryptosSurvey()
+    let symbols = [];
+    await list.forEach((t) => {
+        symbols.push(t.id);
+    })
+    return symbols.sort();
+}
+
+let buildQuotationUrl = (idsMyCryptos, idsSurvey) => {
+    let ids = idsMyCryptos.concat(idsSurvey).join(",");
     return `${config.get('coingecko_quotation_url')}?` +
         `vs_currencies=${config.get('coingecko_currency')}&ids=${ids}`
 }
-let getQuotationsFromApi = async () => {
-    let symbolList = (await getAllSymbols()).join(",");
-    let url = buildQuotationUrl(symbolList);
+
+let getQuotationsFromApi = async (symbolListMyCryptos, symbolListCryptosSurvey) => {
+    let url = buildQuotationUrl(symbolListMyCryptos, symbolListCryptosSurvey);
     let response = await fetch(url)
     if (response.status === 200) {
         return await response.json();
@@ -31,28 +41,8 @@ let getQuotationsFromApi = async () => {
 }
 
 let showUpdateDetail = (tag, coin) => {
-    console.log(tag, `date:${new Date()} coin:${coin.symbol} current:${coin.quotation} 5mn:${coin.last_five_minutes_quotation} hour:${coin.last_one_hour_quotation} day: ${coin.last_day_quotation}`)
-}
-
-/**
- *
- * @param token
- * @param alerts
- * @returns {alert|null}
- */
-let findTokenAlertInAlerts = (token, alerts) => {
-    let alert = null;
-    let globalAlert = null;
-    for (let i = 0; i < alerts.length; i++) {
-        if (alerts[i].token.toUpperCase() === token.toUpperCase() || alerts[i].token.toUpperCase() === '_ALL_TOKENS_') {
-            if (alerts[i].token.toUpperCase() === '_ALL_TOKENS_') {
-                globalAlert = alerts[i];
-            } else {
-                alert = alerts[i];
-            }
-        }
-    }
-    return alert !== null ? alert : globalAlert;
+    console.log(tag, `date:${new Date()} coin:${coin.symbol} current:${coin.quotation} ` +
+        `5mn:${coin.last_five_minutes_quotation} hour:${coin.last_one_hour_quotation} day: ${coin.last_day_quotation}`)
 }
 
 let isNewNotification = (storedNotification, token, type, value) => {
@@ -73,7 +63,6 @@ let sendNotification = async (data) => {
             headers: {'Title': 'Crypto alert'}
         })
 }
-
 
 /**
  *
@@ -195,22 +184,85 @@ let setNotificationIfRequired = (typeFamily, token, tokenValue, previousTokenVal
     }
 }
 
+let getAlert = (token, alerts) => {
+    let alert = null;
+    let globalAlert = null;
+    for (let i = 0; i < alerts.length; i++) {
+        if (alerts[i].token.toUpperCase() === token.toUpperCase() ||
+            alerts[i].token.toUpperCase() === '_ALL_TOKENS_') {
+            if (alerts[i].token.toUpperCase() === '_ALL_TOKENS_') {
+                globalAlert = alerts[i];
+            } else {
+                alert = alerts[i];
+            }
+        }
+    }
+    return alert !== null ? alert : globalAlert;
+}
+/**
+ *
+ * @param token
+ * @param id
+ * @param token
+ * @param alertsCryptos
+ * @param alertsSurvey
+ * @param symbolListCryptosSurvey
+ * @returns {alert|null}
+ */
+let findTokenAlertInAlerts = (id, token, alertsCryptos, alertsSurvey, symbolListCryptosSurvey) => {
+    let isSurvey = symbolListCryptosSurvey.indexOf(id) >= 0;
+    if (isSurvey === false) {
+        return getAlert(token, alertsCryptos);
+    } else {
+        return getAlert(token, alertsSurvey);
+    }
+}
+
+let findCrypto = async (cryptoId) => {
+    let survey = false;
+    let coin = await new MongoHelper().findMyCrypto(cryptoId);
+    if (coin === null) {
+        coin = await new MongoHelper().findCryptosSurvey(cryptoId);
+        survey = true;
+    }
+    if (coin !== null) {
+        return {
+            coin: coin,
+            survey: survey
+        }
+    } else {
+        return null
+    }
+}
+
+let updateDocument = async (coin, survey) => {
+    if (survey === true) {
+        return await new MongoHelper().findOneAndReplaceInCryptosSurvey(coin);
+    } else {
+        return await new MongoHelper().findOneAndReplaceInMyCryptos(coin);
+    }
+}
 
 let update = async () => {
     let updates = 0;
     let notificationTokens = [];
     let currency = config.get('coingecko_currency');
+    let symbolListMyCryptos = await getAllSymbolsInMyCryptos();
+    let symbolListCryptosSurvey = await getAllSymbolsInCryptosSurvey();
     // { id:, name:, eur: }
-    let cryptos = await getQuotationsFromApi();
-    let alerts = await new MongoHelper().getAlerts();
+    let cryptos = await getQuotationsFromApi(symbolListMyCryptos, symbolListCryptosSurvey);
+    let alertsCryptos = await new MongoHelper().getAlerts();
+    let alertsSurvey = await new MongoHelper().getAlertsSurvey();
     if (cryptos.errorGecko !== true) {
         let usdtValue = cryptos["tether"][currency];
         await new MongoHelper().updateUsdtValueInCurrentFiat(usdtValue);
         for (let cryptoId in cryptos) {
-            let coin = await new MongoHelper().findMyCrypto(cryptoId);
-            showUpdateDetail("before", coin)
-            if (coin !== null) {
-                let alert = findTokenAlertInAlerts(coin.symbol, alerts);
+            let coinResult = await findCrypto(cryptoId);
+            if (coinResult !== null) {
+                let coin = coinResult.coin;
+                showUpdateDetail("before", coin)
+                let alert = findTokenAlertInAlerts(coin.id, coin.symbol, alertsCryptos, alertsSurvey,
+                    symbolListCryptosSurvey);
                 let crypto = cryptos[coin.id];
                 coin["last_five_minutes_quotation"] = coin.quotation === null ? 0 : coin.quotation;
                 coin["quotation"] = crypto[currency];
@@ -254,7 +306,7 @@ let update = async () => {
                 }
                 ++updates;
                 showUpdateDetail("after", coin)
-                await new MongoHelper().findOneAndReplaceInMyCryptos(coin);
+                await updateDocument(coin, coinResult.survey);
             }
         }
     }
