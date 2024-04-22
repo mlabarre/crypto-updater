@@ -108,6 +108,14 @@ let buildPhrase = (notification) => {
         return config.get('language') === 'fr' ?
             `😀 ${notification.token} a gagné ${notification.rateValue}% en 1 jour (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
             `😀 ${notification.token} gained ${notification.rateValue}% in 1 day (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
+    } else if (notification.type === 'lt1w') {
+        return config.get('language') === 'fr' ?
+            `😩 ${notification.token} a perdu ${notification.rateValue}% en 1 semaine (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
+            `😩 ${notification.token} lost ${notification.rateValue}% in 1 week (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
+    } else if (notification.type === 'gt1w') {
+        return config.get('language') === 'fr' ?
+            `😀 ${notification.token} a gagné ${notification.rateValue}% en 1 semaine (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
+            `😀 ${notification.token} gained ${notification.rateValue}% in 1 week (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
     }
 }
 
@@ -151,6 +159,8 @@ let storeNotification = (type, token, tokenValue, rateValue, notifications) => {
  * @param alert.lt1h 1 hour down threshold
  * @param alert.gt24h 1 day up threshold
  * @param alert.lt24h 1 day down threshold
+ * @param alert.gt1w 1 week up threshold
+ * @param alert.lt1w 1 week down threshold
  * @param notifications Notifications array.
  */
 let setNotificationIfRequired = (typeFamily, token, tokenValue, previousTokenValue, alert, notifications) => {
@@ -169,11 +179,17 @@ let setNotificationIfRequired = (typeFamily, token, tokenValue, previousTokenVal
             } else if (alert.lt1h > 0 && rateValue <= (alert.lt1h * -1)) {
                 storeNotification('lt1h', token, tokenValue, rateValue, notifications);
             }
-        } else {
+        } else if (typeFamily === '24h') {
             if (alert.gt24h > 0 && rateValue >= (alert.gt24h * 1)) {
                 storeNotification('gt24h', token, tokenValue, rateValue, notifications);
             } else if (alert.lt24h > 0 && rateValue <= (alert.lt24h * -1)) {
                 storeNotification('lt24h', token, tokenValue, rateValue, notifications);
+            }
+        } else if (typeFamily === '1w') {
+            if (alert.gt1w > 0 && rateValue >= (alert.gt1w * 1)) {
+                storeNotification('gt1w', token, tokenValue, rateValue, notifications);
+            } else if (alert.lt1w > 0 && rateValue <= (alert.lt1w * -1)) {
+                storeNotification('lt1w', token, tokenValue, rateValue, notifications);
             }
         }
     }
@@ -215,7 +231,7 @@ let update = async () => {
                     coin["last_one_hour_quotation"] = crypto[currency];
                 }
                 if (coin["last_day_quotation"] !== undefined) {
-                    if ((new Date().getTime() - coin["last_day_quotation_date"].getTime()) >= 3600 * 1000 * 24) {
+                    if ((new Date().getTime() - coin["last_day_quotation_date"].getTime()) >= 3600 * 24 * 1000) {
                         coin["last_day_quotation_date"] = new Date();
                         setNotificationIfRequired('24h', coin.symbol, coin.quotation,
                             coin.last_day_quotation, alert, notificationTokens)
@@ -224,6 +240,17 @@ let update = async () => {
                 } else {
                     coin["last_day_quotation_date"] = new Date();
                     coin["last_day_quotation"] = crypto[currency];
+                }
+                if (coin["last_week_quotation"] !== undefined) {
+                    if ((new Date().getTime() - coin["last_week_quotation_date"].getTime()) >= 3600 * 24 * 7 * 1000) {
+                        coin["last_week_quotation_date"] = new Date();
+                        setNotificationIfRequired('1w', coin.symbol, coin.quotation,
+                            coin.last_week_quotation, alert, notificationTokens)
+                        coin["last_week_quotation"] = crypto[currency];
+                    }
+                } else {
+                    coin["last_week_quotation_date"] = new Date();
+                    coin["last_week_quotation"] = crypto[currency];
                 }
                 ++updates;
                 showUpdateDetail("after", coin)
