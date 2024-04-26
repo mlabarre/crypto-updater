@@ -73,38 +73,39 @@ let sendNotification = async (data) => {
  * @param notification.rateValue Token rate value according type.
  */
 let buildPhrase = (notification) => {
+    let rate = ((parseFloat(notification.rateValue) * 100) / 100).toFixed(2);
     if (notification.type === 'lt5mn') {
         return config.get('language') === 'fr' ?
-            `😩 ${notification.token} a perdu ${notification.rateValue}% en 5mn (cours=${notification.tokenValue} ${config.get('fiat_currency')}) .` :
-            `😩 ${notification.token} lost ${notification.rateValue}% in 5mn (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
+            `😩 ${notification.token} a perdu ${rate}% en 5mn (cours=${notification.tokenValue} ${config.get('fiat_currency')}) .` :
+            `😩 ${notification.token} lost ${rate}% in 5mn (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
     } else if (notification.type === 'gt5mn') {
         return config.get('language') === 'fr' ?
-            `😀 ${notification.token} a gagné ${notification.rateValue}% en 5mn (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
-            `😀 ${notification.token} gained ${notification.rateValue}% in 5mn (quotation=${notification.tokenValue} ${config.get('fiat_currency')}.`
+            `😀 ${notification.token} a gagné ${rate}% en 5mn (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
+            `😀 ${notification.token} gained ${rate}% in 5mn (quotation=${notification.tokenValue} ${config.get('fiat_currency')}.`
     } else if (notification.type === 'lt1h') {
         return config.get('language') === 'fr' ?
-            `😩 ${notification.token} a perdu ${notification.rateValue}% en 1h (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
-            `😩 ${notification.token} lost ${notification.rateValue}% in 1h (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
+            `😩 ${notification.token} a perdu ${rate}% en 1h (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
+            `😩 ${notification.token} lost ${rate}% in 1h (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
     } else if (notification.type === 'gt1h') {
         return config.get('language') === 'fr' ?
-            `😀 ${notification.token} a gagné ${notification.rateValue}% en 1h (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
-            `😀 ${notification.token} gained ${notification.rateValue}% in 1h (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
+            `😀 ${notification.token} a gagné ${rate}% en 1h (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
+            `😀 ${notification.token} gained ${rate}% in 1h (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
     } else if (notification.type === 'lt24h') {
         return config.get('language') === 'fr' ?
-            `😩 ${notification.token} a perdu ${notification.rateValue}% en 1 jour (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
-            `😩 ${notification.token} lost ${notification.rateValue}% in 1 day (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
+            `😩 ${notification.token} a perdu ${rate}% en 1 jour (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
+            `😩 ${notification.token} lost ${rate}% in 1 day (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
     } else if (notification.type === 'gt24h') {
         return config.get('language') === 'fr' ?
-            `😀 ${notification.token} a gagné ${notification.rateValue}% en 1 jour (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
-            `😀 ${notification.token} gained ${notification.rateValue}% in 1 day (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
+            `😀 ${notification.token} a gagné ${rate}% en 1 jour (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
+            `😀 ${notification.token} gained ${rate}% in 1 day (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
     } else if (notification.type === 'lt1w') {
         return config.get('language') === 'fr' ?
-            `😩 ${notification.token} a perdu ${notification.rateValue}% en 1 semaine (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
-            `😩 ${notification.token} lost ${notification.rateValue}% in 1 week (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
+            `😩 ${notification.token} a perdu ${rate}% en 1 semaine (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
+            `😩 ${notification.token} lost ${rate}% in 1 week (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
     } else if (notification.type === 'gt1w') {
         return config.get('language') === 'fr' ?
-            `😀 ${notification.token} a gagné ${notification.rateValue}% en 1 semaine (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
-            `😀 ${notification.token} gained ${notification.rateValue}% in 1 week (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
+            `😀 ${notification.token} a gagné ${rate}% en 1 semaine (cours=${notification.tokenValue} ${config.get('fiat_currency')}).` :
+            `😀 ${notification.token} gained ${rate}% in 1 week (quotation=${notification.tokenValue} ${config.get('fiat_currency')}).`
     }
 }
 
@@ -126,12 +127,13 @@ let handleNotifications = async (notifications) => {
     return {}
 }
 
-let storeNotification = (type, token, tokenValue, rateValue, notifications) => {
-    notifications.push({
+let storeNotification = async (type, token, tokenValue, previousTokenValue, rateValue, notifications) => {
+    await notifications.push({
         type: type,
         token: token.toUpperCase(),
-        tokenValue: tokenValue.toFixed(2),
-        rateValue: rateValue.toFixed(2)
+        tokenValue: tokenValue,
+        previousTokenValue: previousTokenValue,
+        rateValue: rateValue
     });
 }
 /**
@@ -152,33 +154,33 @@ let storeNotification = (type, token, tokenValue, rateValue, notifications) => {
  * @param alert.lt1w 1 week down threshold
  * @param notifications Notifications array.
  */
-let setNotificationIfRequired = (typeFamily, token, tokenValue, previousTokenValue, alert, notifications) => {
+let setNotificationIfRequired = async (typeFamily, token, tokenValue, previousTokenValue, alert, notifications) => {
     if (alert != null) {
         let rateValue = (tokenValue - previousTokenValue) * 100 / previousTokenValue;
         if (rateValue === 0) return;
         if (typeFamily === '5mn') {
             if (alert.gt5mn > 0 && rateValue >= (alert.gt5mn * 1)) {
-                storeNotification('gt5mn', token, tokenValue, rateValue, notifications);
+                await storeNotification('gt5mn', token, tokenValue, previousTokenValue, rateValue, notifications);
             } else if (alert.lt5mn > 0 && rateValue <= (alert.lt5mn * -1)) {
-                storeNotification('lt5mn', token, tokenValue, rateValue, notifications);
+                await storeNotification('lt5mn', token, tokenValue, previousTokenValue, rateValue, notifications);
             }
         } else if (typeFamily === '1h') {
             if (alert.gt1h > 0 && rateValue >= (alert.gt1h * 1)) {
-                storeNotification('gt1h', token, tokenValue, rateValue, notifications);
+                await storeNotification('gt1h', token, tokenValue, previousTokenValue, rateValue, notifications);
             } else if (alert.lt1h > 0 && rateValue <= (alert.lt1h * -1)) {
-                storeNotification('lt1h', token, tokenValue, rateValue, notifications);
+                await storeNotification('lt1h', token, tokenValue, previousTokenValue, rateValue, notifications);
             }
         } else if (typeFamily === '24h') {
             if (alert.gt24h > 0 && rateValue >= (alert.gt24h * 1)) {
-                storeNotification('gt24h', token, tokenValue, rateValue, notifications);
+                await storeNotification('gt24h', token, tokenValue, previousTokenValue, rateValue, notifications);
             } else if (alert.lt24h > 0 && rateValue <= (alert.lt24h * -1)) {
-                storeNotification('lt24h', token, tokenValue, rateValue, notifications);
+                await storeNotification('lt24h', token, tokenValue, previousTokenValue, rateValue, notifications);
             }
         } else if (typeFamily === '1w') {
             if (alert.gt1w > 0 && rateValue >= (alert.gt1w * 1)) {
-                storeNotification('gt1w', token, tokenValue, rateValue, notifications);
+                await storeNotification('gt1w', token, tokenValue, previousTokenValue, rateValue, notifications);
             } else if (alert.lt1w > 0 && rateValue <= (alert.lt1w * -1)) {
-                storeNotification('lt1w', token, tokenValue, rateValue, notifications);
+                await storeNotification('lt1w', token, tokenValue, previousTokenValue, rateValue, notifications);
             }
         }
     }
@@ -235,7 +237,7 @@ let findCrypto = async (cryptoId) => {
     }
 }
 
-let updateDocument = async (coin, survey) => {
+let updateMonitoredCoin = async (coin, survey) => {
     if (survey === true) {
         return await new MongoHelper().findOneAndReplaceInCryptosSurvey(coin);
     } else {
@@ -243,6 +245,106 @@ let updateDocument = async (coin, survey) => {
     }
 }
 
+let updateNonMonitoredCoin = async (coin) => {
+    return await new MongoHelper().findOneAndReplaceInCryptosNotMonitored(coin);
+}
+
+let handleOneHourQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
+    if (coin["last_one_hour_quotation"] !== undefined) {
+        if ((new Date().getTime() - coin["last_one_hour_quotation_date"].getTime()) >= 3600 * 1000) {
+            coin["last_one_hour_quotation_date"] = new Date();
+            await setNotificationIfRequired('1h', coin.symbol, coin.quotation,
+                coin.last_one_hour_quotation, alert, notificationTokens)
+            coin["last_one_hour_quotation"] = crypto[currency];
+        }
+    } else {
+        coin["last_one_hour_quotation_date"] = new Date();
+        coin["last_one_hour_quotation"] = crypto[currency];
+    }
+}
+
+let handleOneDayQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
+    if (coin["last_day_quotation"] !== undefined) {
+        if ((new Date().getTime() - coin["last_day_quotation_date"].getTime()) >= 3600 * 24 * 1000) {
+            coin["last_day_quotation_date"] = new Date();
+            await setNotificationIfRequired('24h', coin.symbol, coin.quotation,
+                coin.last_day_quotation, alert, notificationTokens)
+            coin["last_day_quotation"] = crypto[currency];
+        }
+    } else {
+        coin["last_day_quotation_date"] = new Date();
+        coin["last_day_quotation"] = crypto[currency];
+    }
+}
+
+let handleOneWeekQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
+    if (coin["last_week_quotation"] !== undefined) {
+        if ((new Date().getTime() - coin["last_week_quotation_date"].getTime()) >= 3600 * 24 * 7 * 1000) {
+            coin["last_week_quotation_date"] = new Date();
+            await setNotificationIfRequired('1w', coin.symbol, coin.quotation,
+                coin.last_week_quotation, alert, notificationTokens)
+            coin["last_week_quotation"] = crypto[currency];
+        }
+    } else {
+        coin["last_week_quotation_date"] = new Date();
+        coin["last_week_quotation"] = crypto[currency];
+    }
+}
+
+/**
+ * Handle coin.
+ * @param coinResult Object with mongodb stored coin.
+ * @param currency Currency.
+ * @param usdtValue Current USDT value.
+ * @param cryptos Cryptos from API.
+ * @param alertsCryptos Alerts for MyCryptos.
+ * @param alertsSurvey Alerts for Survey.
+ * @param symbolListCryptosSurvey List of symbols to survey.
+ * @param notificationTokens Notifications.
+ * @returns {Promise<void>}
+ */
+let handleMonitoredCoin = async (coinResult, currency, usdtValue, crypto, alertsCryptos, alertsSurvey,
+                          symbolListCryptosSurvey, notificationTokens) => {
+    let coin = coinResult.coin;
+    showUpdateDetail("before", coin)
+    let alert = findTokenAlertInAlerts(coin.id, coin.symbol, alertsCryptos, alertsSurvey, symbolListCryptosSurvey);
+    coin["last_five_minutes_quotation"] = coin.quotation === null ? 0 : coin.quotation;
+    coin["quotation"] = crypto[currency];
+    await setNotificationIfRequired('5mn', coin.symbol, coin.quotation,
+        coin.last_five_minutes_quotation, alert, notificationTokens)
+    coin["quotation_usdt"] = crypto[currency] / usdtValue;
+    coin["quotation_date"] = new Date();
+    coin["last_five_minutes_quotation_date"] = new Date();
+    await handleOneHourQuotation(coin, currency, crypto, alert, notificationTokens);
+    await handleOneDayQuotation(coin, currency, crypto, alert, notificationTokens);
+    await handleOneWeekQuotation(coin, currency, crypto, alert, notificationTokens);
+    showUpdateDetail("after", coin)
+    await updateMonitoredCoin(coin, coinResult.survey);
+}
+
+let handleNotMonitoredCoin = async (crypto, currency, usdtValue, alert, notificationTokens) => {
+    let coin = await new MongoHelper().findCryptoNotMonitored(crypto.id);
+    if (coin === null) {
+        let cryptoCoingecko = await new MongoHelper().findCryptoInCoingecko(crypto.id);
+        coin = {
+            id: crypto.id,
+            symbol: cryptoCoingecko.symbol,
+            name: cryptoCoingecko.name
+        }
+        coin["last_five_minutes_quotation"] = coin.quotation === null ? 0 : coin.quotation;
+        coin["quotation"] = crypto[currency];
+        setNotificationIfRequired('5mn', coin.symbol, coin.quotation,
+            coin.last_five_minutes_quotation, alert, notificationTokens)
+        coin["quotation_usdt"] = crypto[currency] / usdtValue;
+        coin["quotation_date"] = new Date();
+        coin["last_five_minutes_quotation_date"] = new Date();
+        handleOneHourQuotation(coin, currency, alert, notificationTokens);
+        handleOneDayQuotation(coin, currency, alert, notificationTokens);
+        handleOneWeekQuotation(coin, currency, alert, notificationTokens);
+        showUpdateDetail("after", coin)
+        await updateNonMonitoredCoin(coin);
+    }
+}
 let update = async () => {
     let updates = 0;
     let notificationTokens = [];
@@ -250,63 +352,24 @@ let update = async () => {
     let symbolListMyCryptos = await getAllSymbolsInMyCryptos();
     let symbolListCryptosSurvey = await getAllSymbolsInCryptosSurvey();
     // { id:, name:, eur: }
-    let cryptos = await getQuotationsFromApi(symbolListMyCryptos, symbolListCryptosSurvey);
+    let cryptosFromApi = await getQuotationsFromApi(symbolListMyCryptos, symbolListCryptosSurvey);
     let alertsCryptos = await new MongoHelper().getAlerts();
     let alertsSurvey = await new MongoHelper().getAlertsSurvey();
-    if (cryptos.errorGecko !== true) {
-        let usdtValue = cryptos["tether"][currency];
+    //let alertAllCoinGecko = await new MongoHelper().getAlertAllCoingecko();
+    if (cryptosFromApi.errorGecko !== true) {
+        let usdtValue = cryptosFromApi["tether"][currency];
         await new MongoHelper().updateUsdtValueInCurrentFiat(usdtValue);
-        for (let cryptoId in cryptos) {
+        for (let cryptoId in cryptosFromApi) {
             let coinResult = await findCrypto(cryptoId);
             if (coinResult !== null) {
-                let coin = coinResult.coin;
-                showUpdateDetail("before", coin)
-                let alert = findTokenAlertInAlerts(coin.id, coin.symbol, alertsCryptos, alertsSurvey,
-                    symbolListCryptosSurvey);
-                let crypto = cryptos[coin.id];
-                coin["last_five_minutes_quotation"] = coin.quotation === null ? 0 : coin.quotation;
-                coin["quotation"] = crypto[currency];
-                setNotificationIfRequired('5mn', coin.symbol, coin.quotation,
-                    coin.last_five_minutes_quotation, alert, notificationTokens)
-                coin["quotation_usdt"] = crypto[currency] / usdtValue;
-                coin["quotation_date"] = new Date();
-                coin["last_five_minutes_quotation_date"] = new Date()
-                if (coin["last_one_hour_quotation"] !== undefined) {
-                    if ((new Date().getTime() - coin["last_one_hour_quotation_date"].getTime()) >= 3600 * 1000) {
-                        coin["last_one_hour_quotation_date"] = new Date();
-                        setNotificationIfRequired('1h', coin.symbol, coin.quotation,
-                            coin.last_one_hour_quotation, alert, notificationTokens)
-                        coin["last_one_hour_quotation"] = crypto[currency];
-                    }
-                } else {
-                    coin["last_one_hour_quotation_date"] = new Date();
-                    coin["last_one_hour_quotation"] = crypto[currency];
-                }
-                if (coin["last_day_quotation"] !== undefined) {
-                    if ((new Date().getTime() - coin["last_day_quotation_date"].getTime()) >= 3600 * 24 * 1000) {
-                        coin["last_day_quotation_date"] = new Date();
-                        setNotificationIfRequired('24h', coin.symbol, coin.quotation,
-                            coin.last_day_quotation, alert, notificationTokens)
-                        coin["last_day_quotation"] = crypto[currency];
-                    }
-                } else {
-                    coin["last_day_quotation_date"] = new Date();
-                    coin["last_day_quotation"] = crypto[currency];
-                }
-                if (coin["last_week_quotation"] !== undefined) {
-                    if ((new Date().getTime() - coin["last_week_quotation_date"].getTime()) >= 3600 * 24 * 7 * 1000) {
-                        coin["last_week_quotation_date"] = new Date();
-                        setNotificationIfRequired('1w', coin.symbol, coin.quotation,
-                            coin.last_week_quotation, alert, notificationTokens)
-                        coin["last_week_quotation"] = crypto[currency];
-                    }
-                } else {
-                    coin["last_week_quotation_date"] = new Date();
-                    coin["last_week_quotation"] = crypto[currency];
-                }
+                await handleMonitoredCoin(coinResult, currency, usdtValue, cryptosFromApi[cryptoId],
+                    alertsCryptos, alertsSurvey,
+                    symbolListCryptosSurvey, notificationTokens);
                 ++updates;
-                showUpdateDetail("after", coin)
-                await updateDocument(coin, coinResult.survey);
+            } else {
+                // Crypto not referenced by dashboard. NOT POSSIBLE : COINGECKO RESTRICTIONS ON id
+                //await handleNotMonitoredCoin(cryptosFromApi[cryptoId], currency, usdtValue,
+                //    alertAllCoinGecko, notificationTokens);
             }
         }
     }

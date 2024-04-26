@@ -143,6 +143,41 @@ class MongoHelper {
         }
     }
 
+    findCryptoNotMonitored = async (id) => {
+        try {
+            await this.init();
+            return await this.dbo.collection("cryptos-not-monitored").findOne({id: id});
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
+    findCryptoInCoingecko = async (id) => {
+        try {
+            await this.init();
+            return await this.dbo.collection("coingecko").findOne({id: id});
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
+    getAlertAllCoingecko = async () => {
+        try {
+            await this.init();
+            return await this.dbo.collection("alerts-all-coingecko").findOne({})
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
+    findOneAndReplaceInCryptosNotMonitored = async (doc) => {
+        try {
+            await this.init();
+            return await this.dbo.collection("cryptos-not-monitored").findOneAndReplace({id: doc.id}, doc)
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
 }
 
 module.exports = MongoHelper
