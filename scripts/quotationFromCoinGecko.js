@@ -25,7 +25,7 @@ let getAllSymbolsInCryptosSurvey = async () => {
 let buildQuotationUrl = (idsMyCryptos, idsSurvey) => {
     let ids = idsMyCryptos.concat(idsSurvey).join(",");
     return `${config.get('coingecko_quotation_url')}?` +
-        `vs_currencies=${config.get('coingecko_currency')}&ids=${ids}`
+        `vs_currency=${config.get('coingecko_currency')}&ids=${ids}`
 }
 
 let getQuotationsFromApi = async (symbolListMyCryptos, symbolListCryptosSurvey) => {
@@ -255,11 +255,11 @@ let handleOneHourQuotation = async (coin, currency, crypto, alert, notificationT
             coin["last_one_hour_quotation_date"] = new Date();
             await setNotificationIfRequired('1h', coin.symbol, coin.quotation,
                 coin.last_one_hour_quotation, alert, notificationTokens)
-            coin["last_one_hour_quotation"] = crypto[currency];
+            coin["last_one_hour_quotation"] = crypto.current_price;
         }
     } else {
         coin["last_one_hour_quotation_date"] = new Date();
-        coin["last_one_hour_quotation"] = crypto[currency];
+        coin["last_one_hour_quotation"] = crypto.current_price;
     }
 }
 
@@ -269,11 +269,11 @@ let handleOneDayQuotation = async (coin, currency, crypto, alert, notificationTo
             coin["last_day_quotation_date"] = new Date();
             await setNotificationIfRequired('24h', coin.symbol, coin.quotation,
                 coin.last_day_quotation, alert, notificationTokens)
-            coin["last_day_quotation"] = crypto[currency];
+            coin["last_day_quotation"] = crypto.current_price;
         }
     } else {
         coin["last_day_quotation_date"] = new Date();
-        coin["last_day_quotation"] = crypto[currency];
+        coin["last_day_quotation"] = crypto.current_price;
     }
 }
 
@@ -283,11 +283,11 @@ let handleOneWeekQuotation = async (coin, currency, crypto, alert, notificationT
             coin["last_week_quotation_date"] = new Date();
             await setNotificationIfRequired('1w', coin.symbol, coin.quotation,
                 coin.last_week_quotation, alert, notificationTokens)
-            coin["last_week_quotation"] = crypto[currency];
+            coin["last_week_quotation"] = crypto.current_price;
         }
     } else {
         coin["last_week_quotation_date"] = new Date();
-        coin["last_week_quotation"] = crypto[currency];
+        coin["last_week_quotation"] = crypto.current_price;
     }
 }
 
@@ -296,7 +296,7 @@ let handleOneWeekQuotation = async (coin, currency, crypto, alert, notificationT
  * @param coinResult Object with mongodb stored coin.
  * @param currency Currency.
  * @param usdtValue Current USDT value.
- * @param cryptos Cryptos from API.
+ * @param crypto Crypto from API.
  * @param alertsCryptos Alerts for MyCryptos.
  * @param alertsSurvey Alerts for Survey.
  * @param symbolListCryptosSurvey List of symbols to survey.
@@ -309,16 +309,17 @@ let handleMonitoredCoin = async (coinResult, currency, usdtValue, crypto, alerts
     showUpdateDetail("before", coin)
     let alert = findTokenAlertInAlerts(coin.id, coin.symbol, alertsCryptos, alertsSurvey, symbolListCryptosSurvey);
     coin["last_five_minutes_quotation"] = coin.quotation === null ? 0 : coin.quotation;
-    coin["quotation"] = crypto[currency];
+    coin["quotation"] = crypto.current_price;
     await setNotificationIfRequired('5mn', coin.symbol, coin.quotation,
         coin.last_five_minutes_quotation, alert, notificationTokens)
-    coin["quotation_usdt"] = crypto[currency] / usdtValue;
+    coin["quotation_usdt"] = crypto.current_price / usdtValue;
     coin["quotation_date"] = new Date();
     coin["last_five_minutes_quotation_date"] = new Date();
     await handleOneHourQuotation(coin, currency, crypto, alert, notificationTokens);
     await handleOneDayQuotation(coin, currency, crypto, alert, notificationTokens);
     await handleOneWeekQuotation(coin, currency, crypto, alert, notificationTokens);
-    showUpdateDetail("after", coin)
+    showUpdateDetail("after", coin);
+    coin["info"] = crypto;
     await updateMonitoredCoin(coin, coinResult.survey);
 }
 
@@ -345,6 +346,16 @@ let handleNotMonitoredCoin = async (crypto, currency, usdtValue, alert, notifica
         await updateNonMonitoredCoin(coin);
     }
 }
+
+let getUsdtValue = (cryptos) => {
+    for (let cryptoIndex in cryptos) {
+        if (cryptos[cryptoIndex].id === 'tether') {
+            return cryptos[cryptoIndex].current_price;
+        }
+    }
+    return 0;
+}
+
 let update = async () => {
     let updates = 0;
     let notificationTokens = [];
@@ -357,12 +368,12 @@ let update = async () => {
     let alertsSurvey = await new MongoHelper().getAlertsSurvey();
     //let alertAllCoinGecko = await new MongoHelper().getAlertAllCoingecko();
     if (cryptosFromApi.errorGecko !== true) {
-        let usdtValue = cryptosFromApi["tether"][currency];
+        let usdtValue = getUsdtValue(cryptosFromApi);
         await new MongoHelper().updateUsdtValueInCurrentFiat(usdtValue);
-        for (let cryptoId in cryptosFromApi) {
-            let coinResult = await findCrypto(cryptoId);
+        for (let cryptoIndex in cryptosFromApi) {
+            let coinResult = await findCrypto(cryptosFromApi[cryptoIndex].id);
             if (coinResult !== null) {
-                await handleMonitoredCoin(coinResult, currency, usdtValue, cryptosFromApi[cryptoId],
+                await handleMonitoredCoin(coinResult, currency, usdtValue, cryptosFromApi[cryptoIndex],
                     alertsCryptos, alertsSurvey,
                     symbolListCryptosSurvey, notificationTokens);
                 ++updates;

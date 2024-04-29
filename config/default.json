@@ -5,7 +5,7 @@
   "mongodb_uri" : "mongodb://mongo:27017/?serverSelectionTimeoutMS=3000&directConnection=true",
   "mongodb_database": "crypto",
   "coingecko_coins_url": "https://api.coingecko.com/api/v3/coins/list",
-  "coingecko_quotation_url": "https://api.coingecko.com/api/v3/simple/price",
+  "coingecko_quotation_url": "https://api.coingecko.com/api/v3/coins/markets",
   "notification_ntfy_url": "https://ntfy.sh",
   "notification_ntfy_topic": "...."
 }
