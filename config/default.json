@@ -6,6 +6,7 @@
   "mongodb_database": "crypto",
   "coingecko_coins_url": "https://api.coingecko.com/api/v3/coins/list",
   "coingecko_quotation_url": "https://api.coingecko.com/api/v3/coins/markets",
+  "geckoterminal_quotation_url": "https://api.geckoterminal.com/api/v2/simple/networks/NETWORK/token_price/",
   "notification_ntfy_url": "https://ntfy.sh",
   "notification_ntfy_topic": "...."
 }

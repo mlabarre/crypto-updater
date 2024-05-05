@@ -18,9 +18,20 @@ class MongoHelper {
     findAllSymbolsInMyCryptos = async () => {
         try {
             await this.init();
-            return await this.dbo.collection("my-cryptos").find({}, {
+            return await this.dbo.collection("my-cryptos").find({
+                ico_address: {$exists: false}
+            }, {
                 "id": 1
             }).toArray();
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
+    findAllMyCryptosIco = async () => {
+        try {
+            await this.init();
+            return await this.dbo.collection("my-cryptos").find({ico_address: {$exists: true}}).toArray();
         } finally {
             await this.mongoClient.close();
         }
@@ -58,7 +69,7 @@ class MongoHelper {
     findOneAndReplaceInMyCryptos = async (doc) => {
         try {
             await this.init();
-            return await this.dbo.collection("my-cryptos").findOneAndReplace({id: doc.id}, doc)
+            return await this.dbo.collection("my-cryptos").findOneAndReplace({id: doc.id, symbol: doc.symbol}, doc)
         } finally {
             await this.mongoClient.close();
         }

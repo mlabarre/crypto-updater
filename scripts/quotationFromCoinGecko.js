@@ -220,6 +220,11 @@ let findTokenAlertInAlerts = (id, token, alertsCryptos, alertsSurvey, symbolList
     }
 }
 
+/**
+ *
+ * @param cryptoId
+ * @returns {Promise<{survey: boolean, coin: *}|null>}
+ */
 let findCrypto = async (cryptoId) => {
     let survey = false;
     let coin = await new MongoHelper().findMyCrypto(cryptoId);
@@ -304,7 +309,7 @@ let handleOneWeekQuotation = async (coin, currency, crypto, alert, notificationT
  * @returns {Promise<void>}
  */
 let handleMonitoredCoin = async (coinResult, currency, usdtValue, crypto, alertsCryptos, alertsSurvey,
-                          symbolListCryptosSurvey, notificationTokens) => {
+                                 symbolListCryptosSurvey, notificationTokens) => {
     let coin = coinResult.coin;
     showUpdateDetail("before", coin)
     let alert = findTokenAlertInAlerts(coin.id, coin.symbol, alertsCryptos, alertsSurvey, symbolListCryptosSurvey);
@@ -356,7 +361,7 @@ let getUsdtValue = (cryptos) => {
     return 0;
 }
 
-let update = async () => {
+let updateNonIco = async () => {
     let updates = 0;
     let notificationTokens = [];
     let currency = config.get('coingecko_currency');
@@ -367,8 +372,9 @@ let update = async () => {
     let alertsCryptos = await new MongoHelper().getAlerts();
     let alertsSurvey = await new MongoHelper().getAlertsSurvey();
     //let alertAllCoinGecko = await new MongoHelper().getAlertAllCoingecko();
+    let usdtValue;
     if (cryptosFromApi.errorGecko !== true) {
-        let usdtValue = getUsdtValue(cryptosFromApi);
+        usdtValue = getUsdtValue(cryptosFromApi);
         await new MongoHelper().updateUsdtValueInCurrentFiat(usdtValue);
         for (let cryptoIndex in cryptosFromApi) {
             let coinResult = await findCrypto(cryptosFromApi[cryptoIndex].id);
@@ -384,8 +390,50 @@ let update = async () => {
             }
         }
     }
-    await handleNotifications(notificationTokens);
+    return {
+        updates: updates,
+        usdtValue: usdtValue,
+        alertsCryptos: alertsCryptos,
+        notificationTokens: notificationTokens
+    };
+}
+
+let updateIco = async (nonIcoResult) => {
+    let updates = nonIcoResult.updates;
+    let currency = config.get('coingecko_currency');
+    let listMyCryptos = await new MongoHelper().findAllMyCryptosIco();
+    for (let i = 0; i < listMyCryptos.length; i++) {
+        let cryptoFromMyCrypto = listMyCryptos[i];
+        if (cryptoFromMyCrypto.ico_address === undefined || cryptoFromMyCrypto.ico_address === '') {
+            continue;
+        }
+        let coinResult = {
+            coin: cryptoFromMyCrypto,
+            survey: false
+        }
+        let url = config.get('geckoterminal_quotation_url').replace("NETWORK", cryptoFromMyCrypto.ico_network);
+        url += cryptoFromMyCrypto.ico_address;
+        let response = await fetch(url);
+        if (response.ok) {
+            let res = await response.json();
+            if (res.data.type === 'simple_token_price') {
+                let o = res.data.attributes.token_prices;
+                let crypto = { current_price: parseFloat(Object.values(o)[0])}
+                await handleMonitoredCoin(coinResult, currency, nonIcoResult.usdtValue, crypto,
+                    nonIcoResult.alertsCryptos, [], [], nonIcoResult.notificationTokens);
+                updates++;
+                continue;
+            }
+        }
+        console.log(`Cannot fetch URL ${url} : status ${response.status}`)
+    }
     return updates;
 }
 
+let update = async () => {
+    let nonIcoResult = await updateNonIco();
+    let updates = await updateIco(nonIcoResult);
+    await handleNotifications(nonIcoResult.notificationTokens);
+    return updates
+}
 exports.update = update
