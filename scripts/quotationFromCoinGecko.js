@@ -255,7 +255,7 @@ let updateNonMonitoredCoin = async (coin) => {
 }
 
 let handleOneHourQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
-    if (coin["last_one_hour_quotation"] !== undefined) {
+    if (coin["last_one_hour_quotation"] !== undefined && coin["last_one_hour_quotation_date"] !== null) {
         if ((new Date().getTime() - coin["last_one_hour_quotation_date"].getTime()) >= 3600 * 1000) {
             coin["last_one_hour_quotation_date"] = new Date();
             await setNotificationIfRequired('1h', coin.symbol, coin.quotation,
@@ -269,21 +269,30 @@ let handleOneHourQuotation = async (coin, currency, crypto, alert, notificationT
 }
 
 let handleOneDayQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
-    if (coin["last_day_quotation"] !== undefined) {
-        if ((new Date().getTime() - coin["last_day_quotation_date"].getTime()) >= 3600 * 24 * 1000) {
-            coin["last_day_quotation_date"] = new Date();
-            await setNotificationIfRequired('24h', coin.symbol, coin.quotation,
-                coin.last_day_quotation, alert, notificationTokens)
-            coin["last_day_quotation"] = crypto.current_price;
-        }
+    console.log(JSON.stringify(crypto, null, 2))
+    if (crypto.price_change_24h !== null && crypto.price_change_24h !== undefined) {
+        coin["last_day_quotation"] = crypto.current_price - crypto.price_change_24h;
+        coin["last_day_quotation_date"] = new Date(crypto.last_updated);
     } else {
-        coin["last_day_quotation_date"] = new Date();
-        coin["last_day_quotation"] = crypto.current_price;
+        if (coin["last_day_quotation"] !== undefined && coin["last_day_quotation_date"] !== null) {
+            if ((new Date().getTime() - coin["last_day_quotation_date"].getTime()) >= 3600 * 24 * 1000) {
+                coin["last_day_quotation_date"] = new Date();
+                coin["last_day_quotation"] = crypto.current_price;
+            }
+        } else {
+            coin["last_day_quotation_date"] = new Date();
+            coin["last_day_quotation"] = crypto.current_price;
+            return;
+        }
+    }
+    if ((new Date().getTime() - coin["last_day_quotation_date"].getTime()) >= 3600 * 24 * 1000) {
+        await setNotificationIfRequired('24h', coin.symbol, coin.quotation,
+            coin.last_day_quotation, alert, notificationTokens);
     }
 }
 
 let handleOneWeekQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
-    if (coin["last_week_quotation"] !== undefined) {
+    if (coin["last_week_quotation"] !== undefined && coin["last_week_quotation_date"] !== null) {
         if ((new Date().getTime() - coin["last_week_quotation_date"].getTime()) >= 3600 * 24 * 7 * 1000) {
             coin["last_week_quotation_date"] = new Date();
             await setNotificationIfRequired('1w', coin.symbol, coin.quotation,
@@ -339,14 +348,14 @@ let handleNotMonitoredCoin = async (crypto, currency, usdtValue, alert, notifica
         }
         coin["last_five_minutes_quotation"] = coin.quotation === null ? 0 : coin.quotation;
         coin["quotation"] = crypto[currency];
-        setNotificationIfRequired('5mn', coin.symbol, coin.quotation,
+        await setNotificationIfRequired('5mn', coin.symbol, coin.quotation,
             coin.last_five_minutes_quotation, alert, notificationTokens)
         coin["quotation_usdt"] = crypto[currency] / usdtValue;
         coin["quotation_date"] = new Date();
         coin["last_five_minutes_quotation_date"] = new Date();
-        handleOneHourQuotation(coin, currency, alert, notificationTokens);
-        handleOneDayQuotation(coin, currency, alert, notificationTokens);
-        handleOneWeekQuotation(coin, currency, alert, notificationTokens);
+        await handleOneHourQuotation(coin, currency, alert, notificationTokens);
+        await handleOneDayQuotation(coin, currency, alert, notificationTokens);
+        await handleOneWeekQuotation(coin, currency, alert, notificationTokens);
         showUpdateDetail("after", coin)
         await updateNonMonitoredCoin(coin);
     }
