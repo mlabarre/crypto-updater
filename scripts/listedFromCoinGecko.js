@@ -1,7 +1,7 @@
 const config = require('config');
 const MongoHelper = require('../scripts/mongoHelper');
 
-let getCoinsFromApi = async () => {
+const getCoinsFromApi = async () => {
     let response = await fetch(config.get('coingecko_coins_url'));
     if (response.status === 200) {
         return await response.json();
@@ -12,7 +12,7 @@ let getCoinsFromApi = async () => {
     }
 
 }
-let update = async () => {
+const update = async () => {
     let updates = 0;
     let cryptos = await getCoinsFromApi();
     if (cryptos.errorGecko !== true) {

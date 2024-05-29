@@ -1,7 +1,7 @@
 const config = require('config');
 const MongoHelper = require('../scripts/mongoHelper');
 
-let getAllSymbolsInMyCryptos = async () => {
+const getAllSymbolsInMyCryptos = async () => {
     let list = await new MongoHelper().findAllSymbolsInMyCryptos();
     let symbols = [];
     await list.forEach((t) => {
@@ -13,7 +13,7 @@ let getAllSymbolsInMyCryptos = async () => {
     return symbols.sort();
 }
 
-let getAllSymbolsInCryptosSurvey = async () => {
+const getAllSymbolsInCryptosSurvey = async () => {
     let list = await new MongoHelper().findAllSymbolsInCryptosSurvey()
     let symbols = [];
     await list.forEach((t) => {
@@ -22,13 +22,13 @@ let getAllSymbolsInCryptosSurvey = async () => {
     return symbols.sort();
 }
 
-let buildQuotationUrl = (idsMyCryptos, idsSurvey) => {
+const buildQuotationUrl = (idsMyCryptos, idsSurvey) => {
     let ids = idsMyCryptos.concat(idsSurvey).join(",");
     return `${config.get('coingecko_quotation_url')}?` +
         `vs_currency=${config.get('coingecko_currency')}&ids=${ids}`
 }
 
-let getQuotationsFromApi = async (symbolListMyCryptos, symbolListCryptosSurvey) => {
+const getQuotationsFromApi = async (symbolListMyCryptos, symbolListCryptosSurvey) => {
     let url = buildQuotationUrl(symbolListMyCryptos, symbolListCryptosSurvey);
     let response = await fetch(url)
     if (response.status === 200) {
@@ -40,12 +40,12 @@ let getQuotationsFromApi = async (symbolListMyCryptos, symbolListCryptosSurvey) 
     }
 }
 
-let showUpdateDetail = (tag, coin) => {
+const showUpdateDetail = (tag, coin) => {
     console.log(tag, `date:${new Date()} coin:${coin.symbol} current:${coin.quotation} ` +
         `5mn:${coin.last_five_minutes_quotation} hour:${coin.last_one_hour_quotation} day: ${coin.last_day_quotation}`)
 }
 
-let isNewNotification = (storedNotification, token, type, value) => {
+const isNewNotification = (storedNotification, token, type, value) => {
     for (let i = 0; i < storedNotification.length; i++) {
         if (storedNotification.type === type && storedNotification.token === token &&
             storedNotification.tokenValue === value) {
@@ -55,7 +55,7 @@ let isNewNotification = (storedNotification, token, type, value) => {
     return true;
 }
 
-let sendNotification = async (data) => {
+const sendNotification = async (data) => {
     return await fetch(`${config.notification_ntfy_url}/${config.notification_ntfy_topic}`,
         {
             method: 'POST',
@@ -72,7 +72,7 @@ let sendNotification = async (data) => {
  * @param notification.tokenValue Token value
  * @param notification.rateValue Token rate value according type.
  */
-let buildPhrase = (notification) => {
+const buildPhrase = (notification) => {
     let rate = ((parseFloat(notification.rateValue) * 100) / 100).toFixed(2);
     if (notification.type === 'lt5mn') {
         return config.get('language') === 'fr' ?
@@ -110,7 +110,7 @@ let buildPhrase = (notification) => {
 }
 
 
-let handleNotifications = async (notifications) => {
+const handleNotifications = async (notifications) => {
     let stored = await new MongoHelper().getNotifications();
     let body = "";
     for (let i = 0; i < notifications.length; i++) {
@@ -127,7 +127,7 @@ let handleNotifications = async (notifications) => {
     return {}
 }
 
-let storeNotification = async (type, token, tokenValue, previousTokenValue, rateValue, notifications) => {
+const storeNotification = async (type, token, tokenValue, previousTokenValue, rateValue, notifications) => {
     await notifications.push({
         type: type,
         token: token.toUpperCase(),
@@ -154,7 +154,7 @@ let storeNotification = async (type, token, tokenValue, previousTokenValue, rate
  * @param alert.lt1w 1 week down threshold
  * @param notifications Notifications array.
  */
-let setNotificationIfRequired = async (typeFamily, token, tokenValue, previousTokenValue, alert, notifications) => {
+const setNotificationIfRequired = async (typeFamily, token, tokenValue, previousTokenValue, alert, notifications) => {
     if (alert != null) {
         let rateValue = (tokenValue - previousTokenValue) * 100 / previousTokenValue;
         if (rateValue === 0) return;
@@ -186,7 +186,7 @@ let setNotificationIfRequired = async (typeFamily, token, tokenValue, previousTo
     }
 }
 
-let getAlert = (token, alerts) => {
+const getAlert = (token, alerts) => {
     let alert = null;
     let globalAlert = null;
     for (let i = 0; i < alerts.length; i++) {
@@ -211,7 +211,7 @@ let getAlert = (token, alerts) => {
  * @param symbolListCryptosSurvey
  * @returns {alert|null}
  */
-let findTokenAlertInAlerts = (id, token, alertsCryptos, alertsSurvey, symbolListCryptosSurvey) => {
+const findTokenAlertInAlerts = (id, token, alertsCryptos, alertsSurvey, symbolListCryptosSurvey) => {
     let isSurvey = symbolListCryptosSurvey.indexOf(id) >= 0;
     if (isSurvey === false) {
         return getAlert(token, alertsCryptos);
@@ -225,7 +225,7 @@ let findTokenAlertInAlerts = (id, token, alertsCryptos, alertsSurvey, symbolList
  * @param cryptoId
  * @returns {Promise<{survey: boolean, coin: *}|null>}
  */
-let findCrypto = async (cryptoId) => {
+const findCrypto = async (cryptoId) => {
     let survey = false;
     let coin = await new MongoHelper().findMyCrypto(cryptoId);
     if (coin === null) {
@@ -242,7 +242,7 @@ let findCrypto = async (cryptoId) => {
     }
 }
 
-let updateMonitoredCoin = async (coin, survey) => {
+const updateMonitoredCoin = async (coin, survey) => {
     if (survey === true) {
         return await new MongoHelper().findOneAndReplaceInCryptosSurvey(coin);
     } else {
@@ -250,26 +250,66 @@ let updateMonitoredCoin = async (coin, survey) => {
     }
 }
 
-let updateNonMonitoredCoin = async (coin) => {
+const updateNonMonitoredCoin = async (coin) => {
     return await new MongoHelper().findOneAndReplaceInCryptosNotMonitored(coin);
 }
 
-let handleOneHourQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
-    if (coin["last_one_hour_quotation"] !== undefined && coin["last_one_hour_quotation_date"] !== null) {
-        if ((new Date().getTime() - coin["last_one_hour_quotation_date"].getTime()) >= 3600 * 1000) {
-            coin["last_one_hour_quotation_date"] = new Date();
-            await setNotificationIfRequired('1h', coin.symbol, coin.quotation,
-                coin.last_one_hour_quotation, alert, notificationTokens)
-            coin["last_one_hour_quotation"] = crypto.current_price;
-        }
+const getLastQuotationInArray = (coin, field) => {
+    if (coin[field]) {
+        return coin[field][coin[field].length - 1];
     } else {
-        coin["last_one_hour_quotation_date"] = new Date();
-        coin["last_one_hour_quotation"] = crypto.current_price;
+        return 0.0;
     }
 }
 
-let handleOneDayQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
-    console.log(JSON.stringify(crypto, null, 2))
+const pushLastQuotationInArray = (coin, field, value, size) => {
+    if (coin[field]) {
+        if (coin[field].length < size) {
+            coin[field].unshift(value);
+        } else {
+            coin[field].pop();
+            coin[field].unshift(value);
+        }
+    } else {
+        coin[field] = [];
+        coin[field].unshift(value);
+    }
+}
+
+const handleOneHourQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
+    if (coin["last_one_hour_quotation"] !== undefined && coin["last_one_hour_quotation_date"] !== null) {
+        coin["last_one_hour_quotation_date"] = new Date();
+        coin["last_one_hour_quotation"] = getLastQuotationInArray(coin, "hour_cotations");
+        await setNotificationIfRequired('1h', coin.symbol, coin.quotation,
+            coin.last_one_hour_quotation, alert, notificationTokens)
+        pushLastQuotationInArray(coin, "hour_cotations", crypto.current_price, 12);
+    } else {
+        coin["last_one_hour_quotation_date"] = new Date();
+        coin["last_one_hour_quotation"] = crypto.current_price;
+        coin["hour_cotations"] = [];
+    }
+}
+
+const handleOneWeekQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
+    if (coin["last_week_quotation"] !== undefined && coin["last_week_quotation_date"] !== null) {
+        if ((new Date().getTime() - coin["last_week_quotation_date"].getTime()) >= 3600 * 24 * 1000) {
+            // We have past 1 day
+            coin["last_week_quotation_date"] = new Date();
+            coin["last_week_quotation"] = getLastQuotationInArray(coin, "week_cotations");
+            await setNotificationIfRequired('1w', coin.symbol, coin.quotation,
+                coin.last_week_quotation, alert, notificationTokens)
+            pushLastQuotationInArray(coin, "week_cotations", crypto.current_price, 7);
+        } else {
+            // Always in the same day.
+        }
+    } else {
+        coin["last_week_quotation_date"] = new Date();
+        coin["last_week_quotation"] = crypto.current_price;
+        coin["week_quotations"] = [];
+    }
+}
+
+const handleOneDayQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
     if (crypto.price_change_24h !== null && crypto.price_change_24h !== undefined) {
         coin["last_day_quotation"] = crypto.current_price - crypto.price_change_24h;
         coin["last_day_quotation_date"] = new Date(crypto.last_updated);
@@ -291,20 +331,6 @@ let handleOneDayQuotation = async (coin, currency, crypto, alert, notificationTo
     }
 }
 
-let handleOneWeekQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
-    if (coin["last_week_quotation"] !== undefined && coin["last_week_quotation_date"] !== null) {
-        if ((new Date().getTime() - coin["last_week_quotation_date"].getTime()) >= 3600 * 24 * 7 * 1000) {
-            coin["last_week_quotation_date"] = new Date();
-            await setNotificationIfRequired('1w', coin.symbol, coin.quotation,
-                coin.last_week_quotation, alert, notificationTokens)
-            coin["last_week_quotation"] = crypto.current_price;
-        }
-    } else {
-        coin["last_week_quotation_date"] = new Date();
-        coin["last_week_quotation"] = crypto.current_price;
-    }
-}
-
 /**
  * Handle coin.
  * @param coinResult Object with mongodb stored coin.
@@ -317,7 +343,7 @@ let handleOneWeekQuotation = async (coin, currency, crypto, alert, notificationT
  * @param notificationTokens Notifications.
  * @returns {Promise<void>}
  */
-let handleMonitoredCoin = async (coinResult, currency, usdtValue, crypto, alertsCryptos, alertsSurvey,
+const handleMonitoredCoin = async (coinResult, currency, usdtValue, crypto, alertsCryptos, alertsSurvey,
                                  symbolListCryptosSurvey, notificationTokens) => {
     let coin = coinResult.coin;
     showUpdateDetail("before", coin)
@@ -337,7 +363,7 @@ let handleMonitoredCoin = async (coinResult, currency, usdtValue, crypto, alerts
     await updateMonitoredCoin(coin, coinResult.survey);
 }
 
-let handleNotMonitoredCoin = async (crypto, currency, usdtValue, alert, notificationTokens) => {
+const handleNotMonitoredCoin = async (crypto, currency, usdtValue, alert, notificationTokens) => {
     let coin = await new MongoHelper().findCryptoNotMonitored(crypto.id);
     if (coin === null) {
         let cryptoCoingecko = await new MongoHelper().findCryptoInCoingecko(crypto.id);
@@ -361,7 +387,7 @@ let handleNotMonitoredCoin = async (crypto, currency, usdtValue, alert, notifica
     }
 }
 
-let getUsdtValue = (cryptos) => {
+const getUsdtValue = (cryptos) => {
     for (let cryptoIndex in cryptos) {
         if (cryptos[cryptoIndex].id === 'tether') {
             return cryptos[cryptoIndex].current_price;
@@ -370,7 +396,7 @@ let getUsdtValue = (cryptos) => {
     return 0;
 }
 
-let updateNonIco = async () => {
+const updateNonIco = async () => {
     let updates = 0;
     let notificationTokens = [];
     let currency = config.get('coingecko_currency');
@@ -407,7 +433,7 @@ let updateNonIco = async () => {
     };
 }
 
-let updateIco = async (nonIcoResult) => {
+const updateIco = async (nonIcoResult) => {
     let updates = nonIcoResult.updates;
     let currency = config.get('coingecko_currency');
     let listMyCryptos = await new MongoHelper().findAllMyCryptosIco();
@@ -427,7 +453,7 @@ let updateIco = async (nonIcoResult) => {
             let res = await response.json();
             if (res.data.type === 'simple_token_price') {
                 let o = res.data.attributes.token_prices;
-                let crypto = { current_price: parseFloat(Object.values(o)[0])}
+                let crypto = {current_price: parseFloat(Object.values(o)[0])}
                 await handleMonitoredCoin(coinResult, currency, nonIcoResult.usdtValue, crypto,
                     nonIcoResult.alertsCryptos, [], [], nonIcoResult.notificationTokens);
                 updates++;
@@ -439,10 +465,11 @@ let updateIco = async (nonIcoResult) => {
     return updates;
 }
 
-let update = async () => {
+const update = async () => {
     let nonIcoResult = await updateNonIco();
     let updates = await updateIco(nonIcoResult);
     await handleNotifications(nonIcoResult.notificationTokens);
     return updates
 }
+
 exports.update = update
