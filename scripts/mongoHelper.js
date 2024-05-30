@@ -95,14 +95,25 @@ class MongoHelper {
     }
 
     updateAllCoingecko = async (cryptos) => {
+        let newCoins = [];
         try {
             let updates = 0;
+            let news = 0;
             await this.init();
             for (let crypto in cryptos) {
-                await this.dbo.collection("coingecko").findOneAndReplace({id: cryptos[crypto].id}, cryptos[crypto], {upsert: true});
-                ++updates
+                let doc = await this.dbo.collection("coingecko").findOneAndReplace({id: cryptos[crypto].id}, cryptos[crypto], {upsert: true});
+                if (doc === null) {
+                    newCoins.unshift(cryptos[crypto]);
+                    ++news
+                } else {
+                    ++updates
+                }
             }
-            return updates;
+            return {
+                updates: updates,
+                news: news,
+                newCoins: newCoins
+            };
         } finally {
             await this.mongoClient.close();
         }

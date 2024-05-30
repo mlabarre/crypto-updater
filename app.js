@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const MongoHelper = require('./scripts/mongoHelper')
 const quotation = require('./scripts/quotationFromCoinGecko')
 const listed = require('./scripts/listedFromCoinGecko')
+const utils = require("./scripts/utils");
 
 let updateQuotation = () => {
     quotation.update().then((result) => {
@@ -21,8 +22,12 @@ cron.schedule("*/5 * * * *", () => {
 let updateCoins = () => {
     listed.update().then((result) => {
         new MongoHelper().log("coins",
-            {date: new Date, key: "coins", info: `${result} cryptos updated`})
+            {date: new Date, key: "coins", info: `${result.news} new cryptos, ${result.updates} cryptos updated`})
             .then(() => {
+                if (result.newCoins.length > 0) {
+                    utils.sendNotification(JSON.stringify({coins: result.newCoins}), 'New cryptos').then((res) => {
+                    });
+                }
             });
     })
 }

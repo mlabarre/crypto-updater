@@ -1,5 +1,6 @@
 const config = require('config');
 const MongoHelper = require('../scripts/mongoHelper');
+const utils = require('./utils')
 
 const getAllSymbolsInMyCryptos = async () => {
     let list = await new MongoHelper().findAllSymbolsInMyCryptos();
@@ -53,15 +54,6 @@ const isNewNotification = (storedNotification, token, type, value) => {
         }
     }
     return true;
-}
-
-const sendNotification = async (data) => {
-    return await fetch(`${config.notification_ntfy_url}/${config.notification_ntfy_topic}`,
-        {
-            method: 'POST',
-            body: data,
-            headers: {'Title': 'Crypto alert'}
-        })
 }
 
 /**
@@ -122,7 +114,7 @@ const handleNotifications = async (notifications) => {
         }
     }
     if (body !== '') {
-        await sendNotification(body);
+        await utils.sendNotification(body, 'Crypto alert');
     }
     return {}
 }

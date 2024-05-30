@@ -13,12 +13,12 @@ const getCoinsFromApi = async () => {
 
 }
 const update = async () => {
-    let updates = 0;
+    let result = {};
     let cryptos = await getCoinsFromApi();
     if (cryptos.errorGecko !== true) {
-        updates = await new MongoHelper().updateAllCoingecko(cryptos);
+        result = await new MongoHelper().updateAllCoingecko(cryptos);
     }
-    return updates;
+    return result;
 }
 
 exports.update = update
