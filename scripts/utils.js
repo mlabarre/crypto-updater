@@ -9,4 +9,13 @@ const sendNotification = async (data, title) => {
         })
 }
 
+const formatNewCoins = (newCoins) => {
+    let message = "";
+    for (let i=0; i<newCoins.length; i++) {
+        message += `${newCoins[i].name} (${newCoins[i].symbol.toUpperCase()})\n`;
+    }
+    return message;
+}
+
 exports.sendNotification = sendNotification
+exports.formatNewCoins = formatNewCoins

@@ -25,7 +25,8 @@ let updateCoins = () => {
             {date: new Date, key: "coins", info: `${result.news} new cryptos, ${result.updates} cryptos updated`})
             .then(() => {
                 if (result.newCoins.length > 0) {
-                    utils.sendNotification(JSON.stringify({coins: result.newCoins}), 'New cryptos').then((res) => {
+                    utils.sendNotification(utils.formatNewCoins(result.newCoins), 'New cryptos')
+                        .then((res) => {
                     });
                 }
             });
