@@ -22,14 +22,14 @@ cron.schedule("*/5 * * * *", () => {
 }, {});
 
 let updateCoins = () => {
-    let msg1 = config.language === "fr" ? "Nouvelles cryptos" : "New cryptos";
+    let msg1 = config.language === "fr" ? "nouvelles cryptos" : "new cryptos";
     let msg2 = config.language === "fr" ? "cryptos mises à jour" : "cryptos updated";
     listed.update().then((result) => {
         new MongoHelper().log("coins",
             {date: new Date, key: "coins", info: `${result.news} ${msg1.toLowerCase()}, ${result.updates} ${msg2}`})
             .then(() => {
                 if (result.newCoins.length > 0) {
-                    utils.sendNotification(utils.formatNewCoins(result.newCoins), msg1)
+                    utils.sendNotification(utils.formatNewCoins(result.newCoins), `${result.news} ${msg1}`)
                         .then((res) => {
                     });
                 }

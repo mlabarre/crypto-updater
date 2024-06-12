@@ -2,6 +2,8 @@ const config = require('config');
 const MongoHelper = require('../scripts/mongoHelper');
 const utils = require('./utils')
 
+const trace = false;
+
 const getAllSymbolsInMyCryptos = async () => {
     let list = await new MongoHelper().findAllSymbolsInMyCryptos();
     let symbols = [];
@@ -42,14 +44,15 @@ const getQuotationsFromApi = async (symbolListMyCryptos, symbolListCryptosSurvey
 }
 
 const showUpdateDetail = (tag, coin) => {
-    console.log(tag, `date:${new Date()} coin:${coin.symbol} current:${coin.quotation} ` +
-        `5mn:${coin.last_five_minutes_quotation} hour:${coin.last_one_hour_quotation} day: ${coin.last_day_quotation}`)
+    if (trace === true)
+        console.log(tag, `date:${new Date()} coin:${coin.symbol} current:${coin.quotation} ` +
+            `5mn:${coin.last_five_minutes_quotation} hour:${coin.last_one_hour_quotation} day: ${coin.last_day_quotation}`)
 }
 
 const isNewNotification = (storedNotification, token, type, value) => {
     for (let i = 0; i < storedNotification.length; i++) {
-        if (storedNotification.type === type && storedNotification.token === token &&
-            storedNotification.tokenValue === value) {
+        if (storedNotification[i].type === type && storedNotification[i].token === token &&
+            storedNotification[i].tokenValue === value) {
             return false;
         }
     }
@@ -150,6 +153,9 @@ const setNotificationIfRequired = async (typeFamily, token, tokenValue, previous
     if (alert != null) {
         let rateValue = (tokenValue - previousTokenValue) * 100 / previousTokenValue;
         if (rateValue === 0) return;
+        if (rateValue === Infinity) {
+            console.log(`Infinity detected for token ${token} with tokenValue ${tokenValue} and previousTokenValue ${previousTokenValue}`)
+        }
         if (typeFamily === '5mn') {
             if (alert.gt5mn > 0 && rateValue >= (alert.gt5mn * 1)) {
                 await storeNotification('gt5mn', token, tokenValue, previousTokenValue, rateValue, notifications);
@@ -336,7 +342,7 @@ const handleOneDayQuotation = async (coin, currency, crypto, alert, notification
  * @returns {Promise<void>}
  */
 const handleMonitoredCoin = async (coinResult, currency, usdtValue, crypto, alertsCryptos, alertsSurvey,
-                                 symbolListCryptosSurvey, notificationTokens) => {
+                                   symbolListCryptosSurvey, notificationTokens) => {
     let coin = coinResult.coin;
     showUpdateDetail("before", coin)
     let alert = findTokenAlertInAlerts(coin.id, coin.symbol, alertsCryptos, alertsSurvey, symbolListCryptosSurvey);
