@@ -13,6 +13,9 @@ const getAllSymbolsInMyCryptos = async () => {
     if (!symbols.includes("tether")) {
         symbols.push("tether");
     }
+    if (!symbols.includes("binancecoin")) {
+        symbols.push("binancecoin");
+    }
     return symbols.sort();
 }
 
@@ -385,9 +388,9 @@ const handleNotMonitoredCoin = async (crypto, currency, usdtValue, alert, notifi
     }
 }
 
-const getUsdtValue = (cryptos) => {
+const getCryptoValue = (cryptos, crypto) => {
     for (let cryptoIndex in cryptos) {
-        if (cryptos[cryptoIndex].id === 'tether') {
+        if (cryptos[cryptoIndex].id === crypto) {
             return cryptos[cryptoIndex].current_price;
         }
     }
@@ -407,8 +410,9 @@ const updateNonIco = async () => {
     //let alertAllCoinGecko = await new MongoHelper().getAlertAllCoingecko();
     let usdtValue;
     if (cryptosFromApi.errorGecko !== true) {
-        usdtValue = getUsdtValue(cryptosFromApi);
+        usdtValue = getCryptoValue(cryptosFromApi, "tether");
         await new MongoHelper().updateUsdtValueInCurrentFiat(usdtValue);
+        await new MongoHelper().updateBnbValueInCurrentFiat(getCryptoValue(cryptosFromApi, "binancecoin"));
         for (let cryptoIndex in cryptosFromApi) {
             let coinResult = await findCrypto(cryptosFromApi[cryptoIndex].id);
             if (coinResult !== null) {
