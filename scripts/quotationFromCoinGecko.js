@@ -193,6 +193,9 @@ const getAlert = (token, alerts) => {
     for (let i = 0; i < alerts.length; i++) {
         if (alerts[i].token.toUpperCase() === token.toUpperCase() ||
             alerts[i].token.toUpperCase() === '_ALL_TOKENS_') {
+            if (alerts[i].hasOwnProperty("dontFollow") && alerts[i].dontFollow === true) {
+                return null;
+            }
             if (alerts[i].token.toUpperCase() === '_ALL_TOKENS_') {
                 globalAlert = alerts[i];
             } else {
