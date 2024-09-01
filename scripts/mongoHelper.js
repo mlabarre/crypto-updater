@@ -104,6 +104,16 @@ class MongoHelper {
         }
     }
 
+    updateUsdcValueInCurrentFiat = async (value) => {
+        try {
+            await this.init();
+            return await this.dbo.collection("params").findOneAndReplace({id: "usdc"},
+                {id: "usdc", value: parseFloat(value)}, {upsert: true})
+        } finally {
+            await this.mongoClient.close();
+        }
+    }
+
     updateAllCoingecko = async (cryptos) => {
         let newCoins = [];
         try {

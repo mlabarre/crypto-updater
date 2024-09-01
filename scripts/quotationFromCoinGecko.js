@@ -16,7 +16,9 @@ const getAllSymbolsInMyCryptos = async () => {
     if (!symbols.includes("binancecoin")) {
         symbols.push("binancecoin");
     }
-    return symbols.sort();
+    if (!symbols.includes("usd-coin")) {
+        symbols.push("usd-coin");
+    }return symbols.sort();
 }
 
 const getAllSymbolsInCryptosSurvey = async () => {
@@ -282,11 +284,13 @@ const pushLastQuotationInArray = (coin, field, value, size) => {
 
 const handleOneHourQuotation = async (coin, currency, crypto, alert, notificationTokens) => {
     if (coin["last_one_hour_quotation"] !== undefined && coin["last_one_hour_quotation_date"] !== null) {
-        coin["last_one_hour_quotation_date"] = new Date();
-        coin["last_one_hour_quotation"] = getLastQuotationInArray(coin, "hour_cotations");
-        await setNotificationIfRequired('1h', coin.symbol, coin.quotation,
-            coin.last_one_hour_quotation, alert, notificationTokens)
-        pushLastQuotationInArray(coin, "hour_cotations", crypto.current_price, 12);
+        if ((new Date().getTime() - coin["last_one_hour_quotation_date"].getTime()) >= 3600 * 1000) {
+            coin["last_one_hour_quotation_date"] = new Date();
+            coin["last_one_hour_quotation"] = getLastQuotationInArray(coin, "hour_cotations");
+            await setNotificationIfRequired('1h', coin.symbol, coin.quotation,
+                coin.last_one_hour_quotation, alert, notificationTokens)
+            pushLastQuotationInArray(coin, "hour_cotations", crypto.current_price, 12);
+        }
     } else {
         coin["last_one_hour_quotation_date"] = new Date();
         coin["last_one_hour_quotation"] = crypto.current_price;
@@ -416,6 +420,7 @@ const updateNonIco = async () => {
         usdtValue = getCryptoValue(cryptosFromApi, "tether");
         await new MongoHelper().updateUsdtValueInCurrentFiat(usdtValue);
         await new MongoHelper().updateBnbValueInCurrentFiat(getCryptoValue(cryptosFromApi, "binancecoin"));
+        await new MongoHelper().updateUsdcValueInCurrentFiat(getCryptoValue(cryptosFromApi, "usd-coin"));
         for (let cryptoIndex in cryptosFromApi) {
             let coinResult = await findCrypto(cryptosFromApi[cryptoIndex].id);
             if (coinResult !== null) {
